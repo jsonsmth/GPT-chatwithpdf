@@ -136,7 +136,7 @@ def process_pdf_chunks(chunks, question, user_feedback=None):
 
     context = build_context_within_limit(chunks, question, user_feedback)
 
-    system_message = f"System: You are a helpful and cheerful AI language model, and your task is to answer questions about the following document. The document contains {len(chunks)} chunks of text."
+    system_message = f"System: You are an AI language model, and your task is to answer questions about the following document. The document contains {len(chunks)} chunks of text."
     context.insert(0, system_message)
 
     max_context_length = 4096
@@ -146,7 +146,7 @@ def process_pdf_chunks(chunks, question, user_feedback=None):
     print("Question tokens:", count_tokens(question))
     print("Available tokens:", available_tokens)
 
-    if available_tokens > 0:
+    if available_tokens > 50:
         max_tokens = min(available_tokens, 1024)
 
         print("Max tokens:", max_tokens)
@@ -156,8 +156,9 @@ def process_pdf_chunks(chunks, question, user_feedback=None):
         if response:
             total_tokens += count_tokens(response)
             return response.strip(), total_tokens
+    else:
+        return "I'm sorry, but there is too much context for me to generate a meaningful answer. Please try asking a more specific question or reduce the amount of context.", total_tokens
 
-    return "I'm sorry, but I could not find the information you're looking for.", total_tokens
 
 def build_context_within_limit(chunks, question, user_feedback=None, max_tokens=4096):
     context = []
