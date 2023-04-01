@@ -3,6 +3,7 @@ import PyPDF2
 import requests
 import openai
 import os
+import time
 from dotenv import load_dotenv
 from transformers import GPT2Tokenizer, logging
 from tqdm import tqdm
@@ -49,6 +50,7 @@ def chat_with_gpt(prompt, max_completion_tokens=1000):
         print("Error: Rate limit exceeded. Please try again later.")
         return None
 
+
 def read_pdf_from_url(pdf_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36",
@@ -60,21 +62,44 @@ def read_pdf_from_url(pdf_url):
     response = requests.get(pdf_url, stream=True)
     response.raise_for_status()
 
-    total_size = int(response.headers.get('content-length', 0)) or None
-    block_size = 1024
-    progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True)
+    total_size = int(response.headers.get('content-length', 0))
+    if total_size == 0:
+        print("Downloading PDF of unknown size, please wait...", end="", flush=True)
+        for i in range(3):
+            time.sleep(0.5)
+            print(".", end="", flush=True)
+    else:
+        block_size = 1024
+        progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True)
 
-    with open('pdf_file.pdf', 'wb') as f:
-        for data in response.iter_content(block_size):
-            progress_bar.update(len(data))
-            f.write(data)
+        with open('pdf_file.pdf', 'wb') as f:
+            for data in response.iter_content(block_size):
+                progress_bar.update(len(data))
+                f.write(data)
 
-    progress_bar.close()
+        progress_bar.close()
+
+    print("\nAnalyzing document, please wait...", end="", flush=True)
+    for i in range(3):
+        time.sleep(0.5)
+        print(".", end="", flush=True)
 
     with open('pdf_file.pdf', "rb") as file:
         reader = PyPDF2.PdfFileReader(file)
-        text = " ".join([page.extractText() for page in reader.pages])
+        num_pages = reader.getNumPages()
+        text = ""
+        for i in range(num_pages):
+            page = reader.getPage(i)
+            page_text = page.extractText()
+            if page_text:
+                text += page_text
+
+        if not text:
+            print("\nError: The PDF contains no text or only scanned images.")
+            sys.exit(1)
+
         return text
+
 
 
 
@@ -192,7 +217,7 @@ def main():
         print("Error: The PDF contains no text or only scanned images.")
         sys.exit(1)
 
-    print("Interactive chat with the PDF has started. Type 'quit' to end the chat.\n")
+    print("\nInteractive chat with the PDF has started. Type 'quit' to end the chat.\n")
     total_tokens = 0
     user_feedback = None
 
