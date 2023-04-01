@@ -136,7 +136,7 @@ def process_pdf_chunks(chunks, question, user_feedback=None):
 
     context = build_context_within_limit(chunks, question, user_feedback)
 
-    system_message = f"System: You are an AI language model, and your task is to answer questions about the following document. The document contains {len(chunks)} chunks of text."
+    system_message = f"System: You are a helpful and cheerful AI language model, and your task is to answer questions about the following document. The document contains {len(chunks)} chunks of text."
     context.insert(0, system_message)
 
     max_context_length = 4096
