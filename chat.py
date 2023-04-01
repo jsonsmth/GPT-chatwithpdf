@@ -55,21 +55,24 @@ def read_pdf_from_url(pdf_url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36",
         "Accept-Encoding": "gzip, deflate, br",
+        "Accept": "application/pdf",
         "If-Range": "{497B36C3-2D45-42EA-B30A-8A191BA6F53C},1",
         "Range": "bytes=0-",
         "Upgrade-Insecure-Requests": "1"
     }
-    response = requests.get(pdf_url, stream=True)
+    response = requests.get(pdf_url, stream=True, headers=headers)
     response.raise_for_status()
 
     total_size = int(response.headers.get('content-length', 0))
+    block_size = 1024
+
     if total_size == 0:
         print("Downloading PDF of unknown size, please wait...", end="", flush=True)
-        for i in range(3):
-            time.sleep(0.5)
-            print(".", end="", flush=True)
+        with open('pdf_file.pdf', 'wb') as f:
+            for data in response.iter_content(block_size):
+                f.write(data)
+        print(" Done")
     else:
-        block_size = 1024
         progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True)
 
         with open('pdf_file.pdf', 'wb') as f:
@@ -99,9 +102,6 @@ def read_pdf_from_url(pdf_url):
             sys.exit(1)
 
         return text
-
-
-
 
 def count_tokens(text):
     return len(tokenizer.encode(text))
