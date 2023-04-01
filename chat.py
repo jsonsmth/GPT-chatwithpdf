@@ -5,6 +5,7 @@ import openai
 import os
 from dotenv import load_dotenv
 from transformers import GPT2Tokenizer, logging
+from tqdm import tqdm
 import warnings
 
 # Suppress the transformers library warnings
@@ -50,9 +51,19 @@ def chat_with_gpt(prompt, max_completion_tokens=1000):
 
 
 def read_pdf_from_url(pdf_url):
-    response = requests.get(pdf_url)
+    response = requests.get(pdf_url, stream=True)
+    response.raise_for_status()
+
+    total_size = int(response.headers.get('content-length', 0))
+    block_size = 1024
+    progress_bar = tqdm(total=total_size, unit='iB', unit_scale=True)
+
     with open('pdf_file.pdf', 'wb') as f:
-        f.write(response.content)
+        for data in response.iter_content(block_size):
+            progress_bar.update(len(data))
+            f.write(data)
+
+    progress_bar.close()
 
     with open('pdf_file.pdf', "rb") as file:
         reader = PyPDF2.PdfFileReader(file)
